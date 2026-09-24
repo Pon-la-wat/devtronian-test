@@ -67,6 +67,32 @@ it("[EX-1] adding a product shows it in the list", async () => {
   expect(screen.getByText("OK")).toBeTruthy();
 });
 
+it.each([
+  ["quantity", "", "2", "quantity must be an integer >= 0"],
+  ["threshold", "5", "", "lowStockThreshold must be an integer >= 0"],
+])("[EX-1] a blank %s is refused without creating a product", async (_field, quantity, threshold, message) => {
+  const user = userEvent.setup();
+  const mockFetch = vi.mocked(fetch);
+  mockFetch.mockResolvedValueOnce(jsonResponse([]));
+  render(<App />);
+  await waitFor(() => screen.getByText("No products yet."));
+
+  mockFetch.mockResolvedValueOnce(jsonResponse({ error: message }, 400));
+  await user.type(screen.getByLabelText("SKU"), "SKU-A");
+  await user.type(screen.getByLabelText("Name"), "Paper");
+  if (quantity) await user.type(screen.getByLabelText("Quantity"), quantity);
+  if (threshold) await user.type(screen.getByLabelText("Low-stock threshold"), threshold);
+  await user.click(screen.getByRole("button", { name: "Add product" }));
+
+  await waitFor(() => expect(screen.getByRole("alert").textContent).toContain(message));
+  const request = mockFetch.mock.calls[1];
+  expect(JSON.parse((request[1] as RequestInit).body as string)).toMatchObject({
+    quantity: quantity ? Number(quantity) : null,
+    lowStockThreshold: threshold ? Number(threshold) : null,
+  });
+  expect(screen.getByText("No products yet.")).toBeTruthy();
+});
+
 it("[EX-1] a validation failure keeps the typed values", async () => {
   const user = userEvent.setup();
   const mockFetch = vi.mocked(fetch);

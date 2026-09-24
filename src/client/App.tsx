@@ -36,8 +36,8 @@ function AddProductForm({
         body: JSON.stringify({
           sku,
           name,
-          quantity: Number(quantity),
-          lowStockThreshold: Number(lowStockThreshold),
+          quantity: quantity.trim() === "" ? null : Number(quantity),
+          lowStockThreshold: lowStockThreshold.trim() === "" ? null : Number(lowStockThreshold),
         }),
       });
       const body = await parseJson(response);

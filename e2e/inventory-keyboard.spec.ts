@@ -140,3 +140,37 @@ test("[EX-4] a load failure has a retry next action", async ({ page }) => {
   await expect(page.getByText("No products yet.")).toBeVisible();
   await expectNoSeriousAxeViolations(page);
 });
+
+test("[EX-1] blank numeric product fields show validation and keep the next action", async ({ page }) => {
+  await page.goto("/");
+  await expect(page.getByRole("heading", { name: "Inventory" })).toBeVisible();
+  await tabTo(page, page.getByLabel("SKU"));
+  await page.keyboard.type("SKU-B");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("Pencils");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Tab");
+  await page.keyboard.type("2");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("alert")).toContainText("quantity must be an integer >= 0");
+  await expect(page.getByRole("button", { name: "Add product" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "SKU-B" })).toHaveCount(0);
+  await expectNoSeriousAxeViolations(page);
+
+  await page.keyboard.press("Shift+Tab");
+  await page.keyboard.press("Shift+Tab");
+  await expect(page.getByLabel("Quantity")).toBeFocused();
+  await page.keyboard.type("5");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await page.keyboard.press("Backspace");
+  await page.keyboard.press("Tab");
+  await page.keyboard.press("Enter");
+
+  await expect(page.getByRole("alert")).toContainText("lowStockThreshold must be an integer >= 0");
+  await expect(page.getByRole("button", { name: "Add product" })).toBeVisible();
+  await expect(page.getByRole("cell", { name: "SKU-B" })).toHaveCount(0);
+  await expectNoSeriousAxeViolations(page);
+});

@@ -45,13 +45,13 @@ function asTrimmedString(value: unknown): string | null {
 }
 
 function asNonNegativeInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value >= 0
+  return typeof value === "number" && Number.isSafeInteger(value) && value >= 0
     ? value
     : null;
 }
 
 function asPositiveInteger(value: unknown): number | null {
-  return typeof value === "number" && Number.isInteger(value) && value > 0
+  return typeof value === "number" && Number.isSafeInteger(value) && value > 0
     ? value
     : null;
 }
@@ -119,6 +119,9 @@ export function adjustStock(
       : beforeQuantity - amount;
   if (afterQuantity < 0) {
     throw new ValidationError("stock cannot go negative");
+  }
+  if (!Number.isSafeInteger(afterQuantity)) {
+    throw new ValidationError("stock must remain a safe integer");
   }
 
   product.quantity = afterQuantity;

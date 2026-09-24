@@ -38,6 +38,20 @@ describe("createProduct", () => {
     expect(state.products).toHaveLength(1);
   });
 
+  it.each([
+    ["quantity", { quantity: Number.MAX_SAFE_INTEGER + 1, lowStockThreshold: 2 }],
+    ["threshold", { quantity: 5, lowStockThreshold: Number.MAX_SAFE_INTEGER + 1 }],
+    ["infinite quantity", { quantity: Infinity, lowStockThreshold: 2 }],
+  ])("[EX-1] refuses an unsafe %s without changing stored data", (_label, values) => {
+    const state = emptyInventoryState();
+    expect(() => createProduct(state, {
+      sku: "SKU-A",
+      name: "Paper",
+      ...values,
+    })).toThrow(ValidationError);
+    expect(state.products).toEqual([]);
+  });
+
   it("[EX-1] refuses a duplicate SKU without changing stored data", () => {
     const state = seededState();
     expect(() =>
@@ -118,6 +132,28 @@ describe("adjustStock", () => {
     expect(state.products[0].quantity).toBe(3);
     expect(isLowStock(state.products[0])).toBe(false);
     expect(state.adjustments).toHaveLength(2);
+  });
+
+  it.each([
+    ["unsafe amount", Number.MAX_SAFE_INTEGER + 1, 5],
+    ["overflowing increase", 1, Number.MAX_SAFE_INTEGER],
+    ["infinite amount", Infinity, 5],
+  ])("[EX-3] refuses an %s without changing quantity or history", (_label, amount, quantity) => {
+    const state = emptyInventoryState();
+    createProduct(state, {
+      sku: "SKU-A",
+      name: "Paper",
+      quantity,
+      lowStockThreshold: 2,
+    });
+    expect(() => adjustStock(state, {
+      sku: "SKU-A",
+      direction: "increase",
+      amount,
+      reason: "restock",
+    })).toThrow(ValidationError);
+    expect(state.products[0].quantity).toBe(quantity);
+    expect(state.adjustments).toEqual([]);
   });
 
   it("[EX-3] refuses a decrease that would go negative and changes nothing", () => {

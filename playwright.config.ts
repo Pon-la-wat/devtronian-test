@@ -1,3 +1,6 @@
+import { randomUUID } from "node:crypto";
+import { tmpdir } from "node:os";
+import { join } from "node:path";
 import { defineConfig, devices } from "@playwright/test";
 
 export default defineConfig({
@@ -10,8 +13,7 @@ export default defineConfig({
   webServer: {
     command: "npm run build && node dist/server/main.js",
     env: {
-      CLEAR_DATA_ON_START: "1",
-      DATA_FILE: "data/e2e-inventory.json",
+      DATA_FILE: join(tmpdir(), `inventory-e2e-${randomUUID()}.json`),
       PORT: "4173",
     },
     port: 4173,
