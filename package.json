@@ -11,13 +11,16 @@
     "lint": "tsc -p tsconfig.json",
     "test": "vitest run",
     "build": "tsc -p tsconfig.server.json && vite build",
-    "start": "node dist/server/main.js"
+    "start": "node dist/server/main.js",
+    "e2e": "playwright test"
   },
   "dependencies": {
     "react": "19.3.0",
     "react-dom": "19.3.0"
   },
   "devDependencies": {
+    "@axe-core/playwright": "4.13.0",
+    "@playwright/test": "1.63.0",
     "@testing-library/dom": "10.4.2",
     "@testing-library/react": "16.3.3",
     "@testing-library/user-event": "14.6.7",
