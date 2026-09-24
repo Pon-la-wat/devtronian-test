@@ -1,9 +1,11 @@
+import { readFile } from "node:fs/promises";
 import {
   createServer,
   type IncomingMessage,
   type Server,
   type ServerResponse,
 } from "node:http";
+import { extname, join, normalize, sep } from "node:path";
 import {
   adjustStock,
   createProduct,
@@ -39,12 +41,62 @@ function sendJson(response: ServerResponse, status: number, body: unknown): void
   response.end(JSON.stringify(body));
 }
 
+const contentTypes: Record<string, string> = {
+  ".css": "text/css; charset=utf-8",
+  ".html": "text/html; charset=utf-8",
+  ".js": "text/javascript; charset=utf-8",
+  ".json": "application/json; charset=utf-8",
+  ".svg": "image/svg+xml",
+};
+
+function resolveStaticPath(staticRoot: string, pathname: string): string | null {
+  const decoded = decodeURIComponent(pathname);
+  const relativePath = decoded === "/" ? "index.html" : decoded.slice(1);
+  const normalized = normalize(relativePath);
+  if (normalized.startsWith(`..${sep}`) || normalized === "..") return null;
+  return join(staticRoot, normalized);
+}
+
+async function serveStatic(
+  request: IncomingMessage,
+  response: ServerResponse,
+  staticRoot: string,
+  pathname: string,
+): Promise<void> {
+  if (request.method !== "GET" && request.method !== "HEAD") {
+    sendJson(response, 404, { error: "not_found" });
+    return;
+  }
+
+  const resolvedPath = resolveStaticPath(staticRoot, pathname);
+  if (!resolvedPath) {
+    sendJson(response, 404, { error: "not_found" });
+    return;
+  }
+
+  const filePath = extname(resolvedPath)
+    ? resolvedPath
+    : join(staticRoot, "index.html");
+
+  try {
+    const content = await readFile(filePath);
+    response.writeHead(200, {
+      "content-type": contentTypes[extname(filePath)] ??
+        "application/octet-stream",
+    });
+    response.end(request.method === "HEAD" ? undefined : content);
+  } catch {
+    sendJson(response, 404, { error: "not_found" });
+  }
+}
+
 const ADJUSTMENTS_PATH = /^\/api\/products\/([^/]+)\/adjustments$/;
 
 async function handle(
   request: IncomingMessage,
   response: ServerResponse,
   store: InventoryStore,
+  staticRoot: string,
 ): Promise<void> {
   const url = new URL(request.url ?? "/", "http://localhost");
   const { pathname } = url;
@@ -105,16 +157,22 @@ async function handle(
     }
   }
 
+  if (!pathname.startsWith("/api/")) {
+    await serveStatic(request, response, staticRoot, pathname);
+    return;
+  }
+
   sendJson(response, 404, { error: "not_found" });
 }
 
 export function createInventoryServer(
   dataFilePath = "data/inventory.json",
+  staticRoot = "dist/client",
 ): Server {
   const store = new InventoryStore(dataFilePath);
 
   return createServer((request, response) => {
-    void handle(request, response, store).catch((error: unknown) => {
+    void handle(request, response, store, staticRoot).catch((error: unknown) => {
       if (error instanceof ValidationError) {
         sendJson(response, 400, { error: error.message });
         return;
