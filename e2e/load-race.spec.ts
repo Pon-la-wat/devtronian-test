@@ -47,6 +47,7 @@ test("[EX-1] keyboard add during the first GET survives its delayed response", a
   await expect(page.getByText("Loading products…")).toBeVisible();
   await checkAxe(page);
   releaseGet();
+  await expect(page.getByText("Loading products…")).toBeHidden();
   const row = page.getByRole("row", { name: /SKU-B/ });
   await expect(row).toBeVisible();
   await expect(row.getByRole("cell", { name: "7" })).toBeVisible();

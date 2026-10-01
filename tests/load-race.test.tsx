@@ -36,8 +36,10 @@ it("[EX-1] keeps SKU-B and its quantity after the delayed first GET arrives", as
   render(<App />);
   expect(screen.getByText("Loading products…")).toBeTruthy();
   await addSkuB();
+  expect(screen.getByText("Loading products…")).toBeTruthy();
   releaseGet(response([skuA]));
 
+  await waitFor(() => expect(screen.queryByText("Loading products…")).toBeNull());
   const row = await screen.findByRole("row", { name: /SKU-B/ });
   expect(within(row).getByRole("cell", { name: "7" })).toBeTruthy();
   expect(screen.getAllByRole("cell", { name: "SKU-B" })).toHaveLength(1);
