@@ -238,7 +238,13 @@ export function App() {
       const response = await fetch("/api/products");
       if (!response.ok) throw new Error("failed to load products");
       const body = (await response.json()) as ProductView[];
-      setProducts(body);
+      setProducts((previous) => {
+        const merged = new Map(body.map((product) => [product.sku, product]));
+        for (const product of previous) {
+          if (!merged.has(product.sku)) merged.set(product.sku, product);
+        }
+        return [...merged.values()];
+      });
       setLoadState("loaded");
     } catch {
       setLoadState("error");
@@ -257,7 +263,10 @@ export function App() {
 
       <AddProductForm
         onCreated={(product) => {
-          setProducts((previous) => [...previous, product]);
+          setProducts((previous) => [
+            ...previous.filter((item) => item.sku !== product.sku),
+            product,
+          ]);
           setAnnouncement(`Added ${product.sku}.`);
         }}
       />

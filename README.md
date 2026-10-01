@@ -34,17 +34,23 @@ server, so both must be running together for the working application.
 
 ```bash
 npm test
+npm run e2e
 ```
+
+`npm test` runs the Vitest unit and API tests. `npm run e2e` builds and starts
+an isolated local server, then runs the keyboard flow in Playwright Chromium.
 
 ## Quality check
 
-On a clean checkout:
+On a clean checkout with the npm packages and Playwright Chromium available
+offline:
 
 ```bash
 npm ci
-npm run lint
 npm test
+npm run lint
 npm run build
+npm run e2e
 ```
 
 ## Architecture
@@ -60,12 +66,13 @@ npm run build
 - `src/client/`: a React interface (list, add-product form, per-row
   adjust-stock form) with empty, loading, validation, success and failure
   states, built by Vite.
-- `tests/`: Vitest tests — `inventory.test.ts` for domain rules,
-  `api.test.ts` for the HTTP API and restart durability, `app.test.tsx` for
-  the interface, `health.test.ts` for the baseline health check.
+- `tests/`: Vitest tests for domain rules, API durability, interface behavior,
+  generated-file ignores and README guidance.
+- `e2e/`: Playwright keyboard flows and accessibility checks.
 
 ## Known limitations
 
-Single user, single warehouse, no authentication. No product deletion,
-import/export or production deployment. No multiple warehouses, transfers,
-purchase orders, suppliers, barcodes, prices, tax or accounting.
+The app supports one user and one warehouse, with no authentication. It does
+not support product deletion, import/export, multiple warehouses, transfers,
+purchase orders, suppliers, barcodes, prices, tax, accounting or production
+deployment.
