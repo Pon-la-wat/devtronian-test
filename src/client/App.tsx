@@ -230,6 +230,10 @@ export function App() {
   const [products, setProducts] = useState<ProductView[]>([]);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [announcement, setAnnouncement] = useState<string | null>(null);
+  const [lowStockOnly, setLowStockOnly] = useState(false);
+  const visibleProducts = lowStockOnly
+    ? products.filter((product) => product.quantity <= product.lowStockThreshold)
+    : products;
 
   const loadProducts = useCallback(async () => {
     setLoadState("loading");
@@ -287,6 +291,22 @@ export function App() {
       ) : null}
 
       {loadState === "loaded" && products.length > 0 ? (
+        <label htmlFor="lowStockOnly">
+          <input
+            id="lowStockOnly"
+            type="checkbox"
+            checked={lowStockOnly}
+            onChange={(e) => setLowStockOnly(e.target.checked)}
+          />
+          Show only low stock
+        </label>
+      ) : null}
+
+      {loadState === "loaded" && products.length > 0 && visibleProducts.length === 0 ? (
+        <p>No low-stock products</p>
+      ) : null}
+
+      {loadState === "loaded" && visibleProducts.length > 0 ? (
         <table>
           <thead>
             <tr>
@@ -299,7 +319,7 @@ export function App() {
             </tr>
           </thead>
           <tbody>
-            {products.map((product) => (
+            {visibleProducts.map((product) => (
               <ProductRow
                 key={product.sku}
                 product={product}
